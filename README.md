@@ -17,6 +17,8 @@ function MyComponent(options: {
 }
 
 const sharedState = new sm.Slot("Shared state!");
-UIKit.body.append(<MyComponent mySlot={sharedState} />);
+UIKit.appendTo(document.body, <MyComponent mySlot={sharedState} />);
 sharedState.value = "New state!";
 ```
+
+More examples can be found in [src/test.tsx](src/test.tsx).
