@@ -1,0 +1,28 @@
+{
+  "name": "@mixery/uikit",
+  "version": "1.0.0",
+  "description": "The UI \"framework\", designed for Mixery",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node dist/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MixeryOSS/uikit.git"
+  },
+  "keywords": [
+    "ui",
+    "jsx",
+    "tsx"
+  ],
+  "author": "nahkd123",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/MixeryOSS/uikit/issues"
+  },
+  "homepage": "https://github.com/MixeryOSS/uikit#readme",
+  "dependencies": {
+    "@mixery/state-machine": "^1.0.0"
+  }
+}
