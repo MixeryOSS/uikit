@@ -22,3 +22,8 @@ sharedState.value = "New state!";
 ```
 
 More examples can be found in [src/test.tsx](src/test.tsx).
+
+## Templates
+You can install ``uikit.empty`` template to Mixery Templates by using ``mixery-templates install uikit.empty --dir=templates/uikit.empty`` (obviously you need ``@mixery/templates`` installed globally to do this). After that, you can use ``mixery-templates new uikit.empty`` to generate the template. We recommend using ``module`` for tree shaking capability.
+
+This template already have ``tsconfig.json`` configured to use ``UIKit.createElement`` instead of ``React.createElement`` (and somehow esbuild knows it too), so you can use UIKit features, such as auto update for ``state-machine`` slots or Web Components support.
