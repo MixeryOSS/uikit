@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "files": [
-      "/dist/**/*.js",
-      "/dist/**/*.d.ts",
-      "!/dist/**/test*.*"
+    "/dist/**/*.js",
+    "/dist/**/*.d.ts",
+    "!/dist/**/test*.*"
   ],
   "scripts": {
     "test": "node dist/test.js"
@@ -29,5 +29,9 @@
   "homepage": "https://github.com/MixeryOSS/uikit#readme",
   "dependencies": {
     "@mixery/state-machine": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.18.10",
+    "typescript": "^5.1.6"
   }
 }
