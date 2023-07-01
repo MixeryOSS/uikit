@@ -3,27 +3,33 @@ _The UI "framework", designed for Mixery._
 
 ## Example
 ```tsx
-import { UIKit } from "@mixery/uikit";
+import { UIKit, Component, slotOrDefault } from "@mixery/uikit";
 import * as sm from "@mixery/state-machine";
 
-function MyComponent(options: {
-    mySlot: string | sm.Slot<string>,
-    onClick: (e: MouseEvent) => any
-}) {
-    return <>
-        <span>Hello world!</span><br/>
-        {options.mySlot} {/* == <span>{options.mySlot.value}</span> with value updating */}
-    </>;
+UIKit.appendTo(document.body,
+    <>
+        <div>Hello world!</div>
+    </>
+);
+
+// Components
+class MyComponent extends Component {
+    counter = new Slot(0);
+
+    create() {
+        return <div>
+            Current value is {this.counter}. Click me to increase counter.
+        </div>;
+    }
 }
 
-const sharedState = new sm.Slot("Shared state!");
-UIKit.appendTo(document.body, <MyComponent mySlot={sharedState} />);
-sharedState.value = "New state!";
+const counter = new Slot(0);
+
+UIKit.appendTo(document.body, <>
+    {(<MyComponent counter={counter} />).on("mousedown", e => {
+        console.log(++counter.value);
+    })}
+</>);
+
+setInterval(() => counter.value++, 500);
 ```
-
-More examples can be found in [src/test.tsx](src/test.tsx).
-
-## Templates
-You can install ``uikit.empty`` template to Mixery Templates by using ``mixery-templates install uikit.empty --dir=templates/uikit.empty`` (obviously you need ``@mixery/templates`` installed globally to do this). After that, you can use ``mixery-templates new uikit.empty`` to generate the template. We recommend using ``module`` for tree shaking capability.
-
-This template already have ``tsconfig.json`` configured to use ``UIKit.createElement`` instead of ``React.createElement`` (and somehow esbuild knows it too), so you can use UIKit features, such as auto update for ``state-machine`` slots or Web Components support.

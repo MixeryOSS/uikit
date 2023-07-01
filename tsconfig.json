@@ -8,7 +8,7 @@
         
         // JSX configurations (mainly for testing)
         "jsx": "react",
-        "jsxFactory": "UIKit.createElement",
+        "jsxFactory": "UIKit.create",
         "jsxFragmentFactory": "UIKit.fragment"
     },
     "include": [
