@@ -4,7 +4,9 @@ import { Component } from "./components/Component.js";
 export namespace UIKit {
     export type ComponentInput = string | { new(): Component; } | KitInfoAll | typeof fragment | sm.Slot<any>;
 
-    export function create<T>(component: ComponentInput, options: T, ...children: (KitInfo<any> | string | sm.Slot<any>)[]): KitInfo<any> {
+    export function create(component: ComponentInput, options: any, ...children: (KitInfo<any> | string | sm.Slot<any>)[]): KitInfo<any> {
+        options = options ?? {};
+
         if (component == fragment) {
             return <FragmentInfo> {
                 type: KitInfoType.Fragment, children, on(type, callback) {
