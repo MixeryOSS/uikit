@@ -1,99 +1,81 @@
 import * as sm from "@mixery/state-machine";
-import { Component } from "./components/Component.js";
+import { Component, ComponentCreateOutput } from "./components/Component.js";
+import { Fragment } from "./components/Fragment.js";
 
 export namespace UIKit {
-    export type ComponentInput = string | { new(): Component; } | KitInfoAll | typeof fragment | sm.Slot<any>;
+    export type ComponentCreateInput = { new(): Component } | string | sm.Slot<any> | typeof fragment;
 
-    export function create(component: ComponentInput, options: any, ...children: (KitInfo<any> | string | sm.Slot<any>)[]): KitInfo<any> {
-        options = options ?? {};
+    export function create(component: ComponentCreateInput, options: object, ...children: ComponentCreateOutput[]): ComponentCreateOutput {
+        options = options || {};
 
-        if (component == fragment) {
-            return <FragmentInfo> {
-                type: KitInfoType.Fragment, children, on(type, callback) {
-                    UIKit.applyEvent(this, type, callback);
-                    return this;
-                },
-            };
-        } else if (typeof component != "string" && "prototype" in component && component.prototype instanceof Component) {
-            const obj = new component();
-            Object.keys(options).forEach(k => {
-                const valueIn = options[k];
-
-                if (obj[k] instanceof sm.Slot) {
-                    if (valueIn instanceof sm.Slot) valueIn.bindTo(obj[k]);
-                    else (obj[k] as sm.Slot<any>).value = valueIn;
-                } else {
-                    obj[k] = valueIn;
-                }
-            });
-            return obj.create(children);
-        } else if (typeof component == "string") {
-            const element = document.createElement(component);
-            if (options) Object.keys(options).forEach(k => {
-                const v = options[k];
-                if (typeof v == "function") element[k] = v;
-                else element.setAttribute(k, `${v}`);
-            });
-
-            children.forEach(v => appendTo(element, v as (KitInfoAll | string)));
-            return <HTMLElementInfo> {
-                type: KitInfoType.HTML, element, on(type, callback) {
-                    UIKit.applyEvent(this, type, callback);
-                    return this;
-                },
-            };
-        }
-
-        console.warn(`uikit: Unable to convert to KitInfo:`, component);
-        return null;
-    }
-
-    export function applyEvent<T extends keyof HTMLElementEventMap>(applyTo: KitInfoAll, type: T, callback: (event: HTMLElementEventMap[T]) => any) {
-        if (typeof applyTo != "object" || !("type" in applyTo)) return;
-
-        if (applyTo.type == KitInfoType.Fragment) {
-            applyTo.children.forEach(v => applyEvent(v as KitInfoAll, type, callback));
-        } else if (applyTo.type == KitInfoType.HTML) {
-            applyTo.element.addEventListener(type, callback);
+        if (typeof component == "string") {
+            return createDOM(component, options, children);
+        } else if (component instanceof sm.Slot) {
+            return createSlot(component);
+        } else if (component == fragment) {
+            return new Fragment().create(children);
+        } else {
+            return createComponent(component, options, children);
         }
     }
 
-    export function appendTo(target: HTMLElement, v: KitInfoAll | string) {
-        if (!v) return;
+    export function createSlot(slot: sm.Slot<any>) {
+        let e = document.createElement("span");
+        slot.onUpdate.add(newValue => e.textContent = `${newValue}`);
+        e.textContent = `${slot.value}`;
+        return e;
+    }
 
-        if (typeof v == "string") {
-            target.append(v);
+    export function createComponent(componentClass: { new(): Component }, options: object, children: ComponentCreateOutput[]) {
+        let component = new componentClass();
+        Object.keys(options).forEach(k => {
+            const valueIn = options[k];
+
+            if (typeof component[k] == "function") {
+                component[k](valueIn);
+            } else if (component[k] instanceof sm.Slot) {
+                if (valueIn instanceof sm.Slot) valueIn.bindTo(component[k]);
+                else (component[k] as sm.Slot<any>).value = valueIn;
+            } else {
+                component[k] = valueIn;
+            }
+        });
+
+        let output = component.create(children);
+        if (output instanceof Fragment) component._fragment = output;
+        else if (output instanceof HTMLElement) component._element = output;
+        component.postCreate();
+        
+        return component;
+    }
+
+    export function createDOM(name: string, options: object, children: ComponentCreateOutput[]) {
+        let e = document.createElement(name);
+        Object.keys(options).forEach(k => {
+            const v = options[k];
+            if (typeof v == "function") e[k] = v;
+            else e.setAttribute(k, `${v}`);
+        });
+
+        // TODO: Append children
+        children.forEach(child => appendTo(e, child));
+
+        return e;
+    }
+
+    export function appendTo(target: HTMLElement, v: ComponentCreateOutput) {
+        if (v instanceof Fragment) {
+            v.children.forEach(child => appendTo(target, child));
             return;
+        } else if (v instanceof Component) {
+            if (v._element) target.append(v._element);
+            else if (v._fragment) appendTo(target, v._fragment);
         } else if (v instanceof sm.Slot) {
-            const span = document.createElement("span");
-            v.onUpdate.add(newValue => span.textContent = `${newValue}`);
-            span.textContent = `${v.value}`;
-            target.append(span);
+            target.append(createSlot(v));
+        } else {
+            target.append(v);
         }
-
-        else if (v.type == KitInfoType.Fragment) v.children.forEach(f => appendTo(target, f as KitInfoAll));
-        else if (v.type == KitInfoType.HTML) target.append(v.element);
     }
 
     export const fragment = Symbol();
-
-    export enum KitInfoType {
-        Fragment,
-        HTML
-    }
-
-    export interface KitInfo<TType extends KitInfoType> {
-        type: TType;
-        on<T extends keyof HTMLElementEventMap>(type: T, callback: (event: HTMLElementEventMap[T]) => any): this;
-    }
-
-    export interface FragmentInfo extends KitInfo<KitInfoType.Fragment> {
-        children: KitInfo<any>[];
-    }
-
-    export interface HTMLElementInfo extends KitInfo<KitInfoType.HTML> {
-        element: HTMLElement;
-    }
-
-    export type KitInfoAll = FragmentInfo | HTMLElementInfo;
 }

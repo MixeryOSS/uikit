@@ -15,9 +15,11 @@ class MyComponent extends Component {
 const counter = new Slot(0);
 
 UIKit.appendTo(document.body, <>
-    {(<MyComponent counter={counter} />).on("mousedown", e => {
+    <MyComponent counter={counter} onclick={(e: MouseEvent) => {
         console.log(++counter.value);
-    })}
+    }} />
 </>);
 
 setInterval(() => counter.value++, 500);
+
+UIKit.appendTo(document.body, <div onclick={e => console.log("You clicked me!")}>Open console and click this element</div>);
