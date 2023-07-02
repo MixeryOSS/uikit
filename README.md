@@ -3,16 +3,10 @@ _The UI "framework", designed for Mixery._
 
 ## Example
 ```tsx
-import { UIKit, Component, slotOrDefault } from "@mixery/uikit";
-import * as sm from "@mixery/state-machine";
+import { Slot } from "@mixery/state-machine";
+import { UIKit } from "./UIKit.js";
+import { Component } from "./components/Component.js";
 
-UIKit.appendTo(document.body,
-    <>
-        <div>Hello world!</div>
-    </>
-);
-
-// Components
 class MyComponent extends Component {
     counter = new Slot(0);
 
@@ -26,9 +20,10 @@ class MyComponent extends Component {
 const counter = new Slot(0);
 
 UIKit.appendTo(document.body, <>
-    {(<MyComponent counter={counter} />).on("mousedown", e => {
+    <MyComponent counter={counter} onclick={(e: MouseEvent) => {
         console.log(++counter.value);
-    })}
+    }} />
+    <div onclick={e => console.log("You clicked me!")}>Open console and click this element</div>
 </>);
 
 setInterval(() => counter.value++, 500);
