@@ -28,3 +28,29 @@ UIKit.appendTo(document.body, <>
 
 setInterval(() => counter.value++, 500);
 ```
+
+## Registering event listeners
+There are 3 ways to register events:
+
+### Using ``event:<Event>`` (only apply to custom components)
+This allows you to have access to component data inside your listener.
+
+```tsx
+<MyComponent event:click={(e, c) => {
+    console.log(c instanceof MyComponent); // true
+    c.myComponentData = 123;
+}}>
+```
+
+### Using ``on<Event>``
+This will register your event listeners to HTML element or children in fragment (if your ``create()`` returns a fragment).
+
+```tsx
+<div onclick={e => console.log("clicked")}>Click me!</div>
+<MyComponent onclick={e => console.log("clicked custom component")} />
+```
+
+## Using ``Component#on``
+```tsx
+(<MyComponent />).on("click", e => console.log("clicked"))
+```

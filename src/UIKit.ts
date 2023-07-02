@@ -27,6 +27,14 @@ export namespace UIKit {
         Object.keys(options).forEach(k => {
             const valueIn = options[k];
 
+            if (k.startsWith("event:")) {
+                const name = k.split(":", 2)[1];
+                component.on(name as keyof HTMLElementEventMap, e => {
+                    valueIn(e, component);
+                });
+                return;
+            }
+
             if (typeof component[k] == "function") {
                 component[k](valueIn);
             } else if (component[k] instanceof sm.Slot) {
