@@ -1,5 +1,4 @@
 import { Slot } from "@mixery/state-machine";
-import { UIKit } from "../UIKit.js";
 import { Fragment } from "./Fragment.js";
 
 export abstract class Component {
