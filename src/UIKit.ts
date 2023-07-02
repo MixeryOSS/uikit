@@ -8,15 +8,11 @@ export namespace UIKit {
     export function create(component: ComponentCreateInput, options: object, ...children: ComponentCreateOutput[]): ComponentCreateOutput {
         options = options || {};
 
-        if (typeof component == "string") {
-            return createDOM(component, options, children);
-        } else if (component instanceof sm.Slot) {
-            return createSlot(component);
-        } else if (component == fragment) {
-            return new Fragment().create(children);
-        } else {
-            return createComponent(component, options, children);
-        }
+        if (typeof component == "string") return createDOM(component, options, children);
+        if (component instanceof sm.Slot) return createSlot(component);
+        if (component == fragment) return new Fragment().create(children);
+
+        return createComponent(component, options, children);
     }
 
     export function createSlot(slot: sm.Slot<any>) {
@@ -57,9 +53,7 @@ export namespace UIKit {
             else e.setAttribute(k, `${v}`);
         });
 
-        // TODO: Append children
         children.forEach(child => appendTo(e, child));
-
         return e;
     }
 

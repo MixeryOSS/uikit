@@ -25,6 +25,7 @@ export abstract class Component {
 
         if (this._element) this._element.addEventListener(type, callback);
         else if (this._fragment) this._fragment.on(type, callback);
+        return this;
     }
 }
 

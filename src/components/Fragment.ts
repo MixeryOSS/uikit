@@ -9,12 +9,14 @@ export class Fragment extends Component {
         return this;
     }
 
-    override on<T extends keyof HTMLElementEventMap>(type: T, callback: (event: HTMLElementEventMap[T]) => any): void {
+    override on<T extends keyof HTMLElementEventMap>(type: T, callback: (event: HTMLElementEventMap[T]) => any): this {
         for (let i = 0; i < this.children.length; i++) {
             const child = this.children[i];
             if (child instanceof HTMLElement) child.addEventListener(type, callback);
             else if (child instanceof Component) child.on(type, callback);
             else this.children[i] = UIKit.createSlot(child);
         }
+
+        return this;
     }
 }
