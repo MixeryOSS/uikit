@@ -1,4 +1,4 @@
 export * from "./UIKit.js";
 
-export * from "./components/Label.js";
-export * from "./components/WebComponent.js";
+export * from "./components/Component.js";
+export * from "./components/Fragment.js";

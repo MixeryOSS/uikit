@@ -1,85 +1,116 @@
 import * as sm from "@mixery/state-machine";
-import { Label } from "./components/Label.js";
-import { UIKitWebComponentBaseClass } from "./components/WebComponent.js";
+import { Component, ComponentCreateOutput } from "./components/Component.js";
+import { Fragment } from "./components/Fragment.js";
 
 export namespace UIKit {
-    export type ValidElement = string | HTMLElement | sm.ISlot<any> | ValidElement[];
+    type ComponentClass = { new(): Component }
+    type ComponentFunction = (options: object, children: ComponentCreateOutput[]) => ComponentCreateOutput;
 
-    export type FunctionComponent = (
-        options: Record<string, any>,
-        children: ValidElement
-    ) => HTMLElement | ValidElement[];
-    export type ValidComponent = string | typeof fragment | FunctionComponent;
+    export type ComponentCreateInput =
+        | ComponentClass
+        | ComponentFunction
+        | string
+        | sm.Slot<any>
+        | typeof fragment;
 
-    export type Properties = Record<string, any> & {
-        "uikit:html"?: (element: HTMLElement) => any,
+    export type ComponentOptions = {
+        [T in keyof HTMLElementEventMap as `on${T}`]?: ((e: HTMLElementEventMap[T]) => any);
+    }
+
+    export function create(component: ComponentCreateInput, options: object, ...children: ComponentCreateOutput[]): ComponentCreateOutput {
+        options = options || {};
+
+        if (typeof component == "string") return createDOM(component, options, children);
+        if (component instanceof sm.Slot) return createSlot(component);
+        if (component == fragment) return new Fragment().create(children);
+        if ("prototype" in component && component.prototype instanceof Component) return createClassComponent(component as ComponentClass, options, children);
+
+        return createFunctionComponent(component as ComponentFunction, options, children);
+    }
+
+    export function createSlot(slot: sm.Slot<any>) {
+        let e = document.createElement("span");
+        slot.onUpdate.add(newValue => e.textContent = `${newValue}`);
+        e.textContent = `${slot.value}`;
+        return e;
+    }
+
+    export function createFunctionComponent(func: (options: object, children: ComponentCreateOutput[]) => ComponentCreateOutput, options: object, children: ComponentCreateOutput[]) {
+        let component = func(options, children);
+        if (component instanceof sm.Slot) component = createSlot(component);
+        if (component instanceof Component) attachOptionsToClassComponent(component, options, true);
+        if (component instanceof HTMLElement) attachOptionsToDOM(component, options, true);
+        return component;
+    }
+
+    export function createClassComponent(componentClass: { new(): Component }, options: object, children: ComponentCreateOutput[]) {
+        let component = new componentClass();
+        attachOptionsToClassComponent(component, options);
+
+        let output = component.create(children);
+        if (output instanceof Fragment) component._fragment = output;
+        else if (output instanceof HTMLElement) component._element = output;
+        component.postCreate();
         
-        [x: `event:${string}`]: (e: Event) => any,
-        [x: `event:mouse${string}`]: (e: MouseEvent) => any,
-        "event:click"?: (e: MouseEvent) => any,
-        [x: `event:pointer${string}`]: (e: PointerEvent) => any,
-        [x: `event:key${string}`]: (e: KeyboardEvent) => any,
-    };
+        return component;
+    }
 
-    export function appendTo(target: ParentNode, ...children: ValidElement[]) {
-        children.forEach(child => {
-            if (typeof child == "string" || child instanceof HTMLElement) target.append(child);
-            else if ("value" in child) target.append(Label({ slot: child }));
-            else if (child instanceof Array) appendTo(target, ...child);
+    export function attachOptionsToClassComponent(component: Component, options: object, onlyEvents = false) {
+        Object.keys(options).forEach(k => {
+            const valueIn = options[k];
+
+            if (k.startsWith("event:")) {
+                const name = k.split(":", 2)[1];
+                component.on(name as keyof HTMLElementEventMap, e => {
+                    valueIn(e, component);
+                });
+                return;
+            }
+
+            if (onlyEvents && !k.startsWith("on")) return;
+
+            if (typeof component[k] == "function") {
+                component[k](valueIn);
+            } else if (component[k] instanceof sm.Slot) {
+                if (valueIn instanceof sm.Slot) valueIn.bindTo(component[k]);
+                else (component[k] as sm.Slot<any>).value = valueIn;
+            } else {
+                component[k] = valueIn;
+            }
         });
     }
 
-    export function createElement(
-        element: ValidComponent,
-        properties?: Properties,
-        ...children: ValidElement[]
-    ): HTMLElement | ValidElement[] {
-        let out: HTMLElement | ValidElement[];
+    export function createDOM(name: string, options: object, children: ComponentCreateOutput[]) {
+        let dom = document.createElement(name);
+        attachOptionsToDOM(dom, options);
 
-        if (typeof element == "string") {
-            out = document.createElement(element);
-            appendTo(out, ...children);
-        } else if (typeof element == "function") {
-            out = element(properties ?? {}, children);
-        } else if (element == fragment) {
-            // Fragments can't have properties
-            return children;
-        }
-
-        // #region Process properties
-        if (properties) {
-            if (!(out instanceof HTMLElement)) {
-                // Attempt to use properties on fragment
-                // While it seems impossible at first, you can actually do this by using
-                // fragment inside your component and then use <Component property="value" />
-                let alt = document.createElement("div");
-                alt.style.display = "contents";
-                appendTo(alt, ...out);
-                out = alt;
-            }
-
-            Object.keys(properties).forEach(v => {
-                if (v.includes(":")) {
-                    if (v == "uikit:html") properties["uikit:html"](out as HTMLElement);
-                    else if (v.startsWith("event:")) {
-                        const eventName = v.substring(v.indexOf(":") + 1);
-                        (out as HTMLElement).addEventListener(eventName, properties["event:" + eventName]);
-                    }
-                } else if (typeof properties[v] != "object") {
-                    (out as HTMLElement).setAttribute(v, properties[v]);
-                }
-            });
-        }
-        // #endregion
-        // #region Web Components
-        if (out instanceof UIKitWebComponentBaseClass) {
-            if (out.uiKit_buildingShadow) out.uiKit_buildingShadow = false;
-            else appendTo(out, ...children);
-        }
-        // #endregion
-
-        return out;
+        children.forEach(child => appendTo(dom, child));
+        return dom;
     }
 
-    export const fragment = Symbol("Fragment");
+    export function attachOptionsToDOM(dom: HTMLElement, options: object, onlyEvents = false) {
+        Object.keys(options).forEach(k => {
+            if (onlyEvents && !k.startsWith("on")) return;
+
+            const v = options[k];
+            if (typeof v == "function") dom[k] = v;
+            else dom.setAttribute(k, `${v}`);
+        });
+    }
+
+    export function appendTo(target: HTMLElement, v: ComponentCreateOutput) {
+        if (v instanceof Fragment) {
+            v.children.forEach(child => appendTo(target, child));
+            return;
+        } else if (v instanceof Component) {
+            if (v._element) target.append(v._element);
+            else if (v._fragment) appendTo(target, v._fragment);
+        } else if (v instanceof sm.Slot) {
+            target.append(createSlot(v));
+        } else {
+            target.append(v);
+        }
+    }
+
+    export const fragment = Symbol();
 }

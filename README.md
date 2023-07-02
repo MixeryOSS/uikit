@@ -3,27 +3,65 @@ _The UI "framework", designed for Mixery._
 
 ## Example
 ```tsx
-import { UIKit } from "@mixery/uikit";
-import * as sm from "@mixery/state-machine";
+import { Slot } from "@mixery/state-machine";
+import { UIKit } from "./UIKit.js";
+import { Component } from "./components/Component.js";
 
-function MyComponent(options: {
-    mySlot: string | sm.Slot<string>,
-    onClick: (e: MouseEvent) => any
+class MyComponent extends Component {
+    counter = new Slot(0);
+
+    create() {
+        return <div>
+            Current value is {this.counter}. Click me to increase counter.
+        </div>;
+    }
+}
+
+const counter = new Slot(0);
+setInterval(() => counter.value++, 500);
+
+UIKit.appendTo(document.body, <>
+    <MyComponent counter={counter} onclick={(e: MouseEvent) => {
+        console.log(++counter.value);
+    }} />
+    <div onclick={e => console.log("You clicked me!")}>Open console and click this element</div>
+</>);
+
+function MyFunctionComponent(options: UIKit.ComponentOptions & {
+    slot?: Slot<number>
 }) {
+    const slot = new Slot(0).bindFrom(options?.slot);
+
     return <>
-        <span>Hello world!</span><br/>
-        {options.mySlot} {/* == <span>{options.mySlot.value}</span> with value updating */}
+    Counter: {slot}
     </>;
 }
 
-const sharedState = new sm.Slot("Shared state!");
-UIKit.appendTo(document.body, <MyComponent mySlot={sharedState} />);
-sharedState.value = "New state!";
+UIKit.appendTo(document.body, <MyFunctionComponent slot={counter} onclick={e => console.log(MyFunctionComponent.name)} />)
 ```
 
-More examples can be found in [src/test.tsx](src/test.tsx).
+## Registering event listeners
+There are 3 ways to register events:
 
-## Templates
-You can install ``uikit.empty`` template to Mixery Templates by using ``mixery-templates install uikit.empty --dir=templates/uikit.empty`` (obviously you need ``@mixery/templates`` installed globally to do this). After that, you can use ``mixery-templates new uikit.empty`` to generate the template. We recommend using ``module`` for tree shaking capability.
+### Using ``event:<Event>`` (only apply to custom components)
+This allows you to have access to component data inside your listener.
 
-This template already have ``tsconfig.json`` configured to use ``UIKit.createElement`` instead of ``React.createElement`` (and somehow esbuild knows it too), so you can use UIKit features, such as auto update for ``state-machine`` slots or Web Components support.
+```tsx
+<MyComponent event:click={(e, c) => {
+    console.log(c instanceof MyComponent); // true
+    c.myComponentData = 123;
+}}>
+```
+
+### Using ``on<Event>``
+This will register your event listeners to HTML element or children in fragment (if your ``create()`` returns a fragment).
+
+```tsx
+<div onclick={e => console.log("clicked")}>Click me!</div>
+<MyComponent onclick={e => console.log("clicked custom component")} />
+```
+
+## Using ``Component#on``
+```tsx
+(<MyComponent />).on("click", e => console.log("clicked"))
+```
