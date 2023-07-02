@@ -130,4 +130,4 @@ export abstract class Component {
     }
 });
 
-export type ComponentCreateOutput = Component | HTMLElement | Slot<any>;
+export type ComponentCreateOutput = Component | HTMLElement | Slot<any> | string;

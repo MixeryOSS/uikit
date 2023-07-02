@@ -18,6 +18,7 @@ class MyComponent extends Component {
 }
 
 const counter = new Slot(0);
+setInterval(() => counter.value++, 500);
 
 UIKit.appendTo(document.body, <>
     <MyComponent counter={counter} onclick={(e: MouseEvent) => {
@@ -26,7 +27,17 @@ UIKit.appendTo(document.body, <>
     <div onclick={e => console.log("You clicked me!")}>Open console and click this element</div>
 </>);
 
-setInterval(() => counter.value++, 500);
+function MyFunctionComponent(options: UIKit.ComponentOptions & {
+    slot?: Slot<number>
+}) {
+    const slot = new Slot(0).bindFrom(options?.slot);
+
+    return <>
+    Counter: {slot}
+    </>;
+}
+
+UIKit.appendTo(document.body, <MyFunctionComponent slot={counter} onclick={e => console.log(MyFunctionComponent.name)} />)
 ```
 
 ## Registering event listeners
